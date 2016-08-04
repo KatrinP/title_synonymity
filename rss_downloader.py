@@ -2,6 +2,16 @@
 # -*- coding: UTF-8 -*-
 
 import feedparser
+from datetime import datetime
+import db_connect
+
+
+class RSSrecord:
+    def __init__(self):
+        self.source = None
+        self.title = None
+        self.url = None
+        self.timestamp = None
 
 
 def read_rss_sources(file_path="rss_sources.txt"):
@@ -10,21 +20,29 @@ def read_rss_sources(file_path="rss_sources.txt"):
         return rss_list
 
 
-def get_titles():
+def get_feeds():
     rss_list = read_rss_sources()
-    feeds = []
-    titles = {}
+    news_meta = []
+
     for rss_source in rss_list:
         feed = feedparser.parse(rss_source)
-        feeds.extend(feed["items"])
+        for news in feed.entries:
+            rss_record = RSSrecord()
+            rss_record.source = feed.feed.title
+            rss_record.url = news.links[0].href
+            try:
+                rss_record.timestamp = datetime.strptime(news.published, "%a, %d %b %Y %H:%M:%S %Z")
+            except ValueError:
+                rss_record.timestamp = datetime.now()
+            rss_record.title = news.title
+            news_meta.append(rss_record)
+    return news_meta
 
-    for feed in feeds:
-        link = feed["links"][0]["href"]
-        title = feed["title"]
-        titles[title] = link
 
-    return titles
+def store_titles(news_meta):
+    con, cur = db_connect.connect_to_db("localhost")
+
 
 if __name__ == '__main__':
-    t = get_titles()
-    print(t.keys())
+    f = get_feeds()
+    print(store_titles(f))
