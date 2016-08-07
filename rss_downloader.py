@@ -3,7 +3,6 @@
 
 import feedparser
 from datetime import datetime
-import db_connect
 
 
 class RSSrecord:
@@ -11,7 +10,7 @@ class RSSrecord:
         self.source = None
         self.title = None
         self.url = None
-        self.timestamp = None
+        self.published = None
 
 
 def read_rss_sources(file_path="rss_sources.txt"):
@@ -31,18 +30,15 @@ def get_feeds():
             rss_record.source = feed.feed.title
             rss_record.url = news.links[0].href
             try:
-                rss_record.timestamp = datetime.strptime(news.published, "%a, %d %b %Y %H:%M:%S %Z")
+                rss_record.published = datetime.strptime(news.published, "%a, %d %b %Y %H:%M:%S %Z")
             except ValueError:
-                rss_record.timestamp = datetime.now()
+                rss_record.published = datetime.now()
             rss_record.title = news.title
+            rss_record.title = rss_record.title.replace("'", "''")
             news_meta.append(rss_record)
     return news_meta
 
 
-def store_titles(news_meta):
-    con, cur = db_connect.connect_to_db("localhost")
-
-
 if __name__ == '__main__':
     f = get_feeds()
-    print(store_titles(f))
+
